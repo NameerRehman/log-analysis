@@ -4,20 +4,18 @@ import xlsxwriter
 from datetime import datetime
 import numpy as np
 
-# slogin = input("Enter directory of Sleeve log: ")
+# sfile = input('Enter path of S log: ')
+# bfile = input('Enter path of B log: ')
+# cfile = input('Enter path of C log: ')
+# crfile = input('Enter path of CR log: ')
+# pfile = input('Enter path of P log: ')
 
-#/Users/namee/Desktop/FAT Reports/FAT_C1_40(25_3) + HEADER/PS FAT 1_C1_40_39600_S_LOG.csv')
-# /Users/namee/Desktop/FAT Reports/FAT_C1_40(25_3) + HEADER/PS FAT 1_C1_40_39600_B_LOG.csv',index_col=False)
-# /Users/namee/Desktop/FAT Reports/FAT_C1_40(25_3) + HEADER/PS FAT 1_C1_40_39600_C_LOG.csv',index_col=False)
-# crlog = pd.read_csv('/Users/namee/Desktop/FAT Reports/FAT_C1_40(25_3) + HEADER/PS FAT 1_C1_40_39600_CR_LOG.csv',index_col=False)
-# plog = pd.read_csv('/Users/namee/Desktop/FAT Reports/FAT_C1_40(25_3) + HEADER/PS FAT 1_C1_40_39600_P_LOG.csv',index_col=False)
+sfile = '/Users/namee/Desktop/log_analyzer/s.csv'
+bfile = '/Users/namee/Desktop/log_analyzer/b.csv'
+cfile = '/Users/namee/Desktop/log_analyzer/c.csv'
+crfile = '/Users/namee/Desktop/log_analyzer/cr.csv'
+pfile = '/Users/namee/Desktop/log_analyzer/p.csv'
 
-
-sfile = input('Enter path of S log: ')
-bfile = input('Enter path of B log: ')
-cfile = input('Enter path of C log: ')
-crfile = input('Enter path of CR log: ')
-pfile = input('Enter path of P log: ')
 
 print('\nAnalyzing log files, please wait...')
 
@@ -27,26 +25,15 @@ clog = pd.read_csv(cfile,index_col=False,usecols=[0,1,2,3,4,5])
 crlog = pd.read_csv(crfile,index_col=False,usecols=[0,1,2,3,4,5])
 plog = pd.read_csv(pfile,index_col=False,usecols=[0,1,2,3,4,5])
 
-#slog = slog.dropna(axis=1,how='all')
-# blog = blog.dropna(axis=1,how='all')
-# clog = blog.dropna(axis=1,how='all')
-# crlog = blog.dropna(axis=1,how='all')
 
-workbook  = xlsxwriter.Workbook('/Users/namee/desktop/filename1.xlsx')
-sheet = workbook.add_worksheet('Data')
+workbook  = xlsxwriter.Workbook('Log Analysis.xlsx')
+sheet = workbook.add_worksheet('Yield')
 
 slog.columns = ['DATE','TIME','OPERATOR_NAME', 'PART_NUMBER','ACCOUNT_NUMBER','TAGGED','TAG_REASON','TAG_DESCRIPTION','REPRODUCED','SEQUENCE_NUMBER','BUNDLE_NUMBER','CASE_NUMBER','PALLET_NUMBER','CAM1','CAM2','CAM3','CAM4','CAM5','CAM6','BARCODE_GRADE']
 blog.columns = ['DATE','TIME','BUNDLE NUMBER','TAGGED','TAG_REASON','TAG_DESCRIPTION','REPRODUCED','WEIGHING SCALE', 'BARCODE VERIFIER']
 clog.columns = ['DATE','TIME','CASE NUMBER','TAGGED','TAG_REASON','TAG_DESCRIPTION']
 crlog.columns = ['DATE','TIME','CASE NUMBER','TAGGED','TAG_REASON','TAG_DESCRIPTION']
 plog.columns = ['DATE','TIME','PALLET NUMBER','TAGGED','TAG_REASON','TAG_DESCRIPTION']
-
-
-slog.to_excel('slog2.xlsx')
-
-startdate = slog.DATE[0]
-startyear = startdate[6:9]
-startmonth = startdate[3:4]
 
 starttime = datetime.strptime(slog.DATE[0] + ' ' + slog.TIME[0], '%d/%m/%Y %I:%M:%S %p')
 sendtime = datetime.strptime(slog.DATE[slog.shape[0] - 1] + ' ' + slog.TIME[slog.shape[0] - 1], '%d/%m/%Y %I:%M:%S %p')
@@ -92,7 +79,7 @@ firstbad = firstpass[firstpass.TAGGED == 'TAGGED'].shape[0]
 print('First Pass Defects: ' + str(firstbad))
 
 secondpass = slog[slog.REPRODUCED == 'RE-PRODUCED']
-secondgood = secondpass[secondpass.TAGGED != 'TAGGED']
+secondgood = secondpass[secondpass.TAGGED != 'TAGGED'].shape[0]
 print('Second Pass Yield: ' + str(secondgood))
 
 secondbad = secondpass[secondpass.TAGGED == 'TAGGED'].shape[0]
@@ -109,22 +96,23 @@ print('Bundle Rework Qty: ' + str(bundlerework) + '\n')
 tags = slog.TAG_REASON.value_counts().reset_index(inplace=False)
 tags.columns = ['Tag_Reason', 'Count']
 
-defpercent = []
+defectpercent = []
 for i in tags.Count:
-    defpercent.append((i/tagged)*100)
+    defectpercent.append((i/tagged)*100)
 
-tags['percent'] = defpercent #add list of defect percentages as a column to df
+tags['percent'] = defectpercent #add list of defect percentages as a column to df
 print(tags)
 
 desc = ['Start Date','Complete Date','Total Production Hrs','Sleeve Part Number','Total Run Qty','Total Produced',
-        'Total Tagged','Defective Inserts','Defective Sleeves','First Pass Yield','First Pass Defects','Second Pass Yield'
+        'Total Tagged','Defective Inserts','Defective Sleeves','First Pass Yield','First Pass Defects','Second Pass Yield',
         'Second Pass Defects','Sleeve Rework Qty','Bundle Rework Qty']
-analysis = [starttime,completedate,elapsed,sleevepn,runqty,produced,tagged,inserts,sleeves,firstgood,firstbad,secondgood,secondbad,sleeverework,bundlerework]
+data = [starttime,completedate,elapsed,sleevepn,runqty,produced,tagged,inserts,sleeves,firstgood,firstbad,secondgood,secondbad,sleeverework,bundlerework]
 
 for i in range(len(desc)):
     sheet.write(i,0,desc[i])
-    sheet.write(i,1,str(analysis[i]))
+    sheet.write(i,1,str(data[i]))
 
+sheet.set_column(0,0,18)
 sheet.write(len(desc)+2,0,'Tag Reason')
 sheet.write(len(desc)+2,1,'Count')
 sheet.write(len(desc)+2,2,'%')
@@ -134,9 +122,38 @@ for i in range(tags.shape[0]):
     sheet.write(len(desc)+3+i,1,tags.Count[i])
     sheet.write(len(desc)+3+i,2,tags.percent[i])
 
-workbook.close()
     
+sheet2 = workbook.add_worksheet('CPk')
+def sheet2write(x,y): 
+    sheet2.write(x,y,'Max')
+    sheet2.write(x+1,y,'Min')
+    sheet2.write(x+2,y,'Standard Deviation')
+    sheet2.write(x+3,y,'USL')
+    sheet2.write(x+4,y,'LSL')
+    sheet2.write(x+5,y,'Cp')
+    sheet2.write(x+6,y,'Cpk')
+
+sheet2.set_column(0,0,19)
+sheet2.write(0,1,'CAM3')
+sheet2.write(0,2,'CAM4')
+sheet2.write(0,3,'CAM5')
+sheet2.write(0,4,'CAM6')
+
+sheet2write(1, 0)
+sheet2write(9, 0)
+sheet2write(17, 0)
+sheet2write(25, 0)
+sheet2write(33, 0)
+sheet2write(41, 0)
+sheet2write(49, 0)
+sheet2write(57, 0)
+sheet2write(65, 0)
+
+
+
+
 #---------------------CAM3 Glue----------------------------------------------------
+
 print('\nAnalyzing CAM3 CPk...')
 
 CAM3 = slog.CAM3.str.split('|').dropna()
@@ -168,10 +185,11 @@ for i in range(CAM4.shape[0]):
         CAM4[i][j] = CAM4[i][j][: CAM4[i][j].find(':')] #only take text up to the : character
 
 list1 = []
+r=1
 for h in range(len(CAM4[0])):
     for i in range(CAM4.shape[0]): 
         list1.append(CAM4[i][h]) 
-
+     
     list1= np.array(list1,dtype=float)
     
     lsl4 = 190000
@@ -191,8 +209,17 @@ for h in range(len(CAM4[0])):
     print('LSL: ' + str(lsl4))
     print('Cp: ' + str(Cp4))
     print('Cpk: ' + str(Cpk4))
-
+    
+    sheet2.write(h+r,2,max(list1))
+    sheet2.write(h+1+r,2,min(list1))
+    sheet2.write(h+2+r,2,std4)
+    sheet2.write(h+3+r,2,usl4)
+    sheet2.write(h+4+r,2,lsl4)
+    sheet2.write(h+5+r,2,Cp4)
+    sheet2.write(h+6+r,2,Cpk4)
+    
     list1=[]
+    r += 7
 
 #---------------------CAM5 Rip Cord/Sleeve----------------------------------------------------
 print('\nAnalyzing CAM5 CPk...')
@@ -205,12 +232,12 @@ for i in range(CAM5.shape[0]):
         CAM5[i][j] = CAM5[i][j][: CAM5[i][j].find(':')] #only take text up to the : character
 
 list1 = []
+r=1
 for h in range(len(CAM5[0])):
     for i in range(CAM5.shape[0]): 
         num = float(CAM5[i][h])
         if(num > 0 and num != 99999.0 and num != 999000.0):
             list1.append(num) 
-
     list1= np.array(list1)
     
     if(h==0):
@@ -265,7 +292,16 @@ for h in range(len(CAM5[0])):
     print('W' + window + ' Cp: ' + str(Cp5))
     print('W' + window + ' Cpk: ' + str(Cpk5))
     
+    sheet2.write(h+r,3,max(list1))
+    sheet2.write(h+1+r,3,min(list1))
+    sheet2.write(h+2+r,3,std4)
+    sheet2.write(h+3+r,3,usl4)
+    sheet2.write(h+4+r,3,lsl4)
+    sheet2.write(h+5+r,3,Cp4)
+    sheet2.write(h+6+r,3,Cpk4)
+    
     list1=[]
+    r += 7
 
 #---------------------CAM6 Barcode----------------------------------------------------
 print('\nAnalyzing CAM6 CPk...')
@@ -277,6 +313,7 @@ for i in range(CAM6.shape[0]):
     for j in range(len(CAM6[0])):
         CAM6[i][j] = CAM6[i][j][: CAM6[i][j].find(':')] #only take text up to the : character
 
+r=1
 list1 = []
 for h in range(len(CAM6[0])):
     for i in range(CAM6.shape[0]):
@@ -313,10 +350,20 @@ for h in range(len(CAM6[0])):
     print('W' + window + ' Cp: ' + str(Cp6))
     print('W' + window + ' Cpk: ' + str(Cpk6))
      
-    list1=[]
+    sheet2.write(h+r,4,max(list1))
+    sheet2.write(h+1+r,4,min(list1))
+    sheet2.write(h+2+r,4,std4)
+    sheet2.write(h+3+r,4,usl4)
+    sheet2.write(h+4+r,4,lsl4)
+    sheet2.write(h+5+r,4,Cp4)
+    sheet2.write(h+6+r,4,Cpk4)
     
+    list1=[]
+    r += 7
 #---------------------Barcdode Grade----------------------------------------------------
 print('\nAnalyzing Barcode Grade...')
+
+sheet3 = workbook.add_worksheet('Barcode Grade')
 
 BARCODE_GRADE = slog.BARCODE_GRADE.dropna()
 BARCODE_GRADE = BARCODE_GRADE.reset_index(drop=True)
@@ -325,6 +372,19 @@ for i in range(BARCODE_GRADE.shape[0]):
         BARCODE_GRADE[i] = float(BARCODE_GRADE[i][1:])
     else:
         BARCODE_GRADE[i] = float(BARCODE_GRADE[i])
+
+A,B,C,D,F = 0,0,0,0,0
+for i in BARCODE_GRADE: 
+    if(i<0.5):
+        F += 1
+    elif(0.5 <= i <= 1.5):
+        D += 1
+    elif(1.5 < i <= 2.5):
+        C += 1
+    elif(2.5 < i <= 3.5):
+        B += 1
+    elif(3.5 < i <= 4):
+        A += 1
         
 maxgrade = max(BARCODE_GRADE)
 mingrade = min(BARCODE_GRADE)
@@ -333,5 +393,27 @@ avggrade = np.mean(BARCODE_GRADE)
 print('\nMax: ' + str(maxgrade))
 print('Min: ' + str(mingrade))
 print('Average Grade: ' + str(avggrade))
+
+sheet3.set_column(0,0,15)
+sheet3.write(0,0, 'Max Grade')
+sheet3.write(1,0, 'Min Grade')
+sheet3.write(2,0, 'Average Grade')
+sheet3.write(0,1, maxgrade)
+sheet3.write(1,1, mingrade)
+sheet3.write(2,1, avggrade)
+sheet3.write(4,0, 'Grade')
+sheet3.write(4,1, 'Count')
+sheet3.write(5,0, 'A')
+sheet3.write(6,0, 'B')
+sheet3.write(7,0, 'C')
+sheet3.write(8,0, 'D')
+sheet3.write(9,0, 'F')
+sheet3.write(5,1, A)
+sheet3.write(6,1, B)
+sheet3.write(7,1, C)
+sheet3.write(8,1, D)
+sheet3.write(9,1, F)
+  
+workbook.close()
 
 k=input('\nPress Enter to Exit')
