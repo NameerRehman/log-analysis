@@ -124,6 +124,13 @@ for i in range(tags.shape[0]):
 
     
 sheet2 = workbook.add_worksheet('CPk')
+
+sheet2.set_column(0,0,19)
+sheet2.write(0,1,'CAM3')
+sheet2.write(0,2,'CAM4')
+sheet2.write(0,3,'CAM5')
+sheet2.write(0,4,'CAM6')
+
 def sheet2write(x,y): 
     sheet2.write(x,y,'Max')
     sheet2.write(x+1,y,'Min')
@@ -132,12 +139,6 @@ def sheet2write(x,y):
     sheet2.write(x+4,y,'LSL')
     sheet2.write(x+5,y,'Cp')
     sheet2.write(x+6,y,'Cpk')
-
-sheet2.set_column(0,0,19)
-sheet2.write(0,1,'CAM3')
-sheet2.write(0,2,'CAM4')
-sheet2.write(0,3,'CAM5')
-sheet2.write(0,4,'CAM6')
 
 sheet2write(1, 0)
 sheet2write(9, 0)
@@ -149,20 +150,20 @@ sheet2write(49, 0)
 sheet2write(57, 0)
 sheet2write(65, 0)
 
-
-
-
 #---------------------CAM3 Glue----------------------------------------------------
 
 print('\nAnalyzing CAM3 CPk...')
 
-CAM3 = slog.CAM3.str.split('|').dropna()
-CAM3 = CAM3.reset_index(drop=True)
+def Cpk(column):
+    cam = slog[column].str.split('|').dropna()
+    cam = cam.reset_index(drop=True)
+    for i in range(cam.shape[0]):
+        cam[i] = [j for j in cam[i] if '[' in j] #Change row to new list without unwanted entries
+        for j in range(len(cam[0])):
+            cam[i][j] = cam[i][j][: cam[i][j].find(':')] #only take text up to the : character
+    return cam 
 
-for i in range(CAM3.shape[0]):
-    CAM3[i] = [j for j in CAM3[i] if '[' in j] #Change row to new list without unwanted entries
-    for j in range(len(CAM3[0])):
-        CAM3[i][j] = CAM3[i][j][: CAM3[i][j].find(':')] #only take text up to the : character
+CAM3 = Cpk('CAM3')
 
 list = []
 for h in range(len(CAM3[0])):
@@ -175,14 +176,9 @@ for h in range(len(CAM3[0])):
     list=[]
     
 #---------------------CAM4 Insert----------------------------------------------------
-print('\nAnalyzing CAM4 CPk...')
+print('\nAnalyzing CAM4 CPk...')       
 
-CAM4 = slog.CAM4.str.split('|').dropna()
-CAM4 = CAM4.reset_index(drop=True)
-for i in range(CAM4.shape[0]):
-    CAM4[i] = [j for j in CAM4[i] if '[' in j] #Change row to new list without unwanted entries
-    for j in range(len(CAM4[0])):
-        CAM4[i][j] = CAM4[i][j][: CAM4[i][j].find(':')] #only take text up to the : character
+CAM4 = Cpk('CAM4')
 
 list1 = []
 r=1
@@ -224,12 +220,7 @@ for h in range(len(CAM4[0])):
 #---------------------CAM5 Rip Cord/Sleeve----------------------------------------------------
 print('\nAnalyzing CAM5 CPk...')
 
-CAM5 = slog.CAM5.str.split('|').dropna()
-CAM5 = CAM5.reset_index(drop=True)
-for i in range(CAM5.shape[0]):
-    CAM5[i] = [j for j in CAM5[i] if '[' in j] #Change row to new list without unwanted entries
-    for j in range(len(CAM5[0])):
-        CAM5[i][j] = CAM5[i][j][: CAM5[i][j].find(':')] #only take text up to the : character
+CAM5 = Cpk('CAM5')
 
 list1 = []
 r=1
@@ -306,14 +297,8 @@ for h in range(len(CAM5[0])):
 #---------------------CAM6 Barcode----------------------------------------------------
 print('\nAnalyzing CAM6 CPk...')
 
-CAM6 = slog.CAM6.str.split('|').dropna()
-CAM6 = CAM6.reset_index(drop=True)
-for i in range(CAM6.shape[0]):
-    CAM6[i] = [j for j in CAM6[i] if '[' in j] #Change row to new list without unwanted entries
-    for j in range(len(CAM6[0])):
-        CAM6[i][j] = CAM6[i][j][: CAM6[i][j].find(':')] #only take text up to the : character
-
-r=1
+CAM6 = Cpk('CAM6')
+r=1 #start point of excel row
 list1 = []
 for h in range(len(CAM6[0])):
     for i in range(CAM6.shape[0]):
