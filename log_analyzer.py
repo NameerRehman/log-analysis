@@ -156,6 +156,7 @@ sheet2write(65, 0)
 
 print('\nAnalyzing CAM3 CPk...')
 
+<<<<<<< Updated upstream
 CAM3 = slog.CAM3.str.split('|').dropna()
 CAM3 = CAM3.reset_index(drop=True)
 
@@ -163,6 +164,18 @@ for i in range(CAM3.shape[0]):
     CAM3[i] = [j for j in CAM3[i] if '[' in j] #Change row to new list without unwanted entries
     for j in range(len(CAM3[0])):
         CAM3[i][j] = CAM3[i][j][: CAM3[i][j].find(':')] #only take text up to the : character
+=======
+def filterdata(column):
+    cam = slog[column].str.split('|').dropna()
+    cam = cam.reset_index(drop=True)
+    for i in range(cam.shape[0]):
+        cam[i] = [j for j in cam[i] if '[' in j] #Change row to new list without unwanted entries
+        for j in range(len(cam[0])):
+            cam[i][j] = cam[i][j][: cam[i][j].find(':')] #only take text up to the : character
+    return cam 
+
+CAM3 = filterdata('CAM3')
+>>>>>>> Stashed changes
 
 list = []
 for h in range(len(CAM3[0])):
@@ -177,59 +190,81 @@ for h in range(len(CAM3[0])):
 #---------------------CAM4 Insert----------------------------------------------------
 print('\nAnalyzing CAM4 CPk...')
 
+<<<<<<< Updated upstream
 CAM4 = slog.CAM4.str.split('|').dropna()
 CAM4 = CAM4.reset_index(drop=True)
 for i in range(CAM4.shape[0]):
     CAM4[i] = [j for j in CAM4[i] if '[' in j] #Change row to new list without unwanted entries
     for j in range(len(CAM4[0])):
         CAM4[i][j] = CAM4[i][j][: CAM4[i][j].find(':')] #only take text up to the : character
+=======
+#CAM4 = filterdata('CAM4')
+>>>>>>> Stashed changes
 
-list1 = []
-r=1
-for h in range(len(CAM4[0])):
-    for i in range(CAM4.shape[0]): 
-        list1.append(CAM4[i][h]) 
-     
-    list1= np.array(list1,dtype=float)
-    
-    lsl4 = 190000
-    usl4 = 262000 
+cam4lsl = {0: 190000}
+cam4usl = {0: 262000}
+
+def cpk(lsl,usl,column):
+    cam = filterdata(column)
+
+    list1 = []
+    r=1
+    for h in range(len(cam[0])):
+        for i in range(cam.shape[0]): 
+            list1.append(cam[i][h]) 
+         
+        list1= np.array(list1,dtype=float)
         
-    std4=np.std(list1)
-    mn4 = np.mean(list1,axis=0)
-    Cp4 = (usl4-lsl4)/(6*std4)
-    Cpl4 = (mn4 - lsl4)/(3*std4)
-    Cpu4 = (usl4 - mn4)/(3*std4)
-    Cpk4 = min(Cpl4,Cpu4)
+        lsl4 = 190000
+        usl4 = 262000 
+            
+    #     def key_in_dic():
+    # for x in lis:
+    #     if x in options:
+    #         options[x]()
+    #     else:
+    #         doSomethingElse()
 
-    print('\nMax: ' + str(max(list1)))
-    print('Min: ' + str(min(list1)))
-    print('Standard Deviation: ' + str(std4))
-    print('USL: ' + str(usl4))
-    print('LSL: ' + str(lsl4))
-    print('Cp: ' + str(Cp4))
-    print('Cpk: ' + str(Cpk4))
+        
+        std4=np.std(list1)
+        mn4 = np.mean(list1,axis=0)
+        Cp4 = (usl4-lsl4)/(6*std4)
+        Cpl4 = (mn4 - lsl4)/(3*std4)
+        Cpu4 = (usl4 - mn4)/(3*std4)
+        Cpk4 = min(Cpl4,Cpu4)
     
-    sheet2.write(h+r,2,max(list1))
-    sheet2.write(h+1+r,2,min(list1))
-    sheet2.write(h+2+r,2,std4)
-    sheet2.write(h+3+r,2,usl4)
-    sheet2.write(h+4+r,2,lsl4)
-    sheet2.write(h+5+r,2,Cp4)
-    sheet2.write(h+6+r,2,Cpk4)
-    
-    list1=[]
-    r += 7
+        print('\nMax: ' + str(max(list1)))
+        print('Min: ' + str(min(list1)))
+        print('Standard Deviation: ' + str(std4))
+        print('USL: ' + str(usl4))
+        print('LSL: ' + str(lsl4))
+        print('Cp: ' + str(Cp4))
+        print('Cpk: ' + str(Cpk4))
+        
+        sheet2.write(h+r,2,max(list1))
+        sheet2.write(h+1+r,2,min(list1))
+        sheet2.write(h+2+r,2,std4)
+        sheet2.write(h+3+r,2,usl4)
+        sheet2.write(h+4+r,2,lsl4)
+        sheet2.write(h+5+r,2,Cp4)
+        sheet2.write(h+6+r,2,Cpk4)
+        
+        list1=[]
+        r += 7
 
 #---------------------CAM5 Rip Cord/Sleeve----------------------------------------------------
 print('\nAnalyzing CAM5 CPk...')
 
+<<<<<<< Updated upstream
 CAM5 = slog.CAM5.str.split('|').dropna()
 CAM5 = CAM5.reset_index(drop=True)
 for i in range(CAM5.shape[0]):
     CAM5[i] = [j for j in CAM5[i] if '[' in j] #Change row to new list without unwanted entries
     for j in range(len(CAM5[0])):
         CAM5[i][j] = CAM5[i][j][: CAM5[i][j].find(':')] #only take text up to the : character
+=======
+CAM5 = filterdata('CAM5')
+>>>>>>> Stashed changes
 
 list1 = []
 r=1
@@ -306,6 +341,7 @@ for h in range(len(CAM5[0])):
 #---------------------CAM6 Barcode----------------------------------------------------
 print('\nAnalyzing CAM6 CPk...')
 
+<<<<<<< Updated upstream
 CAM6 = slog.CAM6.str.split('|').dropna()
 CAM6 = CAM6.reset_index(drop=True)
 for i in range(CAM6.shape[0]):
@@ -314,6 +350,10 @@ for i in range(CAM6.shape[0]):
         CAM6[i][j] = CAM6[i][j][: CAM6[i][j].find(':')] #only take text up to the : character
 
 r=1
+=======
+CAM6 = filterdata('CAM6')
+r=1 #start point of excel row
+>>>>>>> Stashed changes
 list1 = []
 for h in range(len(CAM6[0])):
     for i in range(CAM6.shape[0]):
