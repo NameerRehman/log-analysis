@@ -6,22 +6,10 @@ import numpy as np
 import time
 
 #Read Files
-# sfile = input('Enter path of S log: ')
-# bfile = input('Enter path of B log: ')
-# cfile = input('Enter path of C log: ')
-# pfile = input('Enter path of P log: ')
-#pyqt
-
-# sfile = '/Users/nrehman/Downloads/s.csv'
-# bfile = '/Users/nrehman/Downloads/b.csv'
-# cfile = '/Users/nrehman/Downloads/c.csv'
-# pfile = '/Users/nrehman/Downloads/p.csv'
-
-t0=time.time()
-sfile = '/Users/namee/Downloads/s.csv'
-bfile = '/Users/namee/Downloads/b.csv'
-cfile = '/Users/namee/Downloads/c.csv'
-pfile = '/Users/namee/Downloads/p.csv'
+sfile = input('Enter path of S log: ')
+bfile = input('Enter path of B log: ')
+cfile = input('Enter path of C log: ')
+pfile = input('Enter path of P log: ')
 
 print('\nAnalyzing log files, please wait...')
 
@@ -44,7 +32,7 @@ plog.columns = ['DATE','TIME','PALLET NUMBER','TAGGED','TAG_REASON','TAG_DESCRIP
 workbook  = xlsxwriter.Workbook('Log Analysis.xlsx')
 sheet = workbook.add_worksheet('Yield')
 
-#Combine Date and Time columns to creat standard date/time formate
+#Combine Date and Time columns to creat standard date/time format
 starttime = datetime.strptime(slog.DATE[0] + ' ' + slog.TIME[0], '%d/%m/%Y %I:%M:%S %p')
 sendtime = datetime.strptime(slog.DATE[slog.shape[0] - 1] + ' ' + slog.TIME[slog.shape[0] - 1], '%d/%m/%Y %I:%M:%S %p')
 bendtime = datetime.strptime(blog.DATE[blog.shape[0] - 1] + ' ' + blog.TIME[blog.shape[0] - 1], '%d/%m/%Y %I:%M:%S %p')
@@ -110,9 +98,8 @@ bundlerework = blog[blog.REPRODUCED == 'RE-PRODUCED']
 bundlerework = bundlerework[bundlerework.TAGGED != 'TAGGED'].shape[0]
 print('Bundle Rework Qty: ' + str(bundlerework) + '\n')
 
-#timing = slog.TIME
 
-#--------------DOWNTIME
+#--------------DOWNTIME----------------
 # downtimesheet= workbook.add_worksheet('Downtime')
 # downtimesheet.write(0,0,'From')
 # downtimesheet.write(0,1,'To')
@@ -136,7 +123,6 @@ print('Bundle Rework Qty: ' + str(bundlerework) + '\n')
 
 
 #-----------------SLEEVE TAGS------------------------------
-
 
 #create new df with count of all sleeve tag reasons 
 tags = slog.TAG_REASON.value_counts().reset_index(inplace=False)
@@ -189,7 +175,7 @@ for i in range(btags.shape[0]):
     sheet.write(len(desc)+5+i+tags.shape[0],1,btags.Count[i])
 
 
-#-------------------Statistical Yield----------------------------------
+#-------------------Process Capabilities----------------------------------
 sheet2 = workbook.add_worksheet('CPk')
 
 sheet2.set_column(0,0,19)
@@ -221,33 +207,31 @@ sheet2write(65, 0)
 def filter_data(column):
     
     #Split string in column by '|' character (creates a list)
-    cam = slog[column].str.split('|').dropna()
-    cam = cam.reset_index(drop=True)
-
-    #iterate through height of df 
-    for i in range(cam.shape[0]): 
-        
-        #filter cam[i] to keep only values that contain '['
-        cam[i] = [j for j in cam[i] if '[' in j] 
-                
-        #iterate through filtered list of values that contain '[' 
-        for j in range(len(cam[i])): 
-            
-            #extract text up to the : character
-            cam[i][j] = cam[i][j][: cam[i][j].find(':')] 
+    camdf = pd.DataFrame(slog[column].dropna().str.split('|').tolist())
     
-    #return column containing list of filtered values
-    return cam  
+    #create empty "filtered dataframe"
+    fltrd_camdf = pd.DataFrame()
+    
+    #iterate through each column of camdf
+    for i in range(camdf.shape[1]):
+        if('[' in camdf.iloc[0,i]):
+            
+            #if column contains '[' take values up to ':' and add column to filtered df 
+            fltrd_camdf[fltrd_camdf.shape[1]] = camdf[camdf.columns[i]].apply(lambda x: x.split(':')[0]) 
+            
+    return fltrd_camdf  
 
 
+#calculate standard deviation of each dataframe column
 def std_dev(cam):
     std = []
     for i in range(cam.shape[1]):
         #convert ith column to np array
-        column = np.array(cam.iloc[:,[i]],dtype=float)
+        column = np.array(cam.iloc[:,i],dtype=float)
         std.append(np.nanstd(column))
     return std
 
+#calculate mean of each dataframe column
 def mean(cam):
     mean = []
     for i in range(cam.shape[1]):
@@ -256,16 +240,24 @@ def mean(cam):
         mean.append(np.mean(column))   
     return mean
 
-def max_min(cam):
-    column = np.array(cam.iloc[:,[i]],dtype=float)
-    
+#find max & min in each dataframe column
+def max_min(cam):  
+    maxi,mini = [],[]
+    for i in range(cam.shape[1]):
+        column = np.array(cam.iloc[:,[i]],dtype=float)
+        maxi.append(np.amax(column))
+        mini.append(np.amin(column))
+        # max_min = [np.amin(column,axis=0),np.amax(column,axis=0)]
 
+    return mini,maxi
+
+#calculate cp and cpk of each dataframe column
 def Cp(cam,camnumber):   
-    stddev = std_dev(cam)
-    mn = mean(cam)
-    cp,cpl,cpu,cpk=[],[],[],[]
+    stdlist = std_dev(cam)
+    mnlist = mean(cam)
+    cp,cpl,cpu,cpk,usllist,lsllist=[],[],[],[],[],[]
     
-    for i in range(len(stddev)):
+    for i in range(len(stdlist)):
         
         if(camnumber == 3):
             if(i<=5):
@@ -283,76 +275,80 @@ def Cp(cam,camnumber):
             if(i <= 1):
                 lsl = 820.0
                 usl = 840.0
-                window = '1'
             elif(i==2):
                 lsl = 10000.0
                 usl = 45000.0
-                window = '3'
             elif(i==3 or i==4):
                 lsl = 950
                 usl = 1150
-                window = '4'
             elif(i==5):
                 lsl = 1000
                 usl = 20000
-                window = '6'
             elif(i==6 or i==7):
                 lsl = 1100
                 usl = 1300
-                window = '7'
             elif(i==8):
                 lsl = 500
                 usl = 3000
-                window = '9'
         elif(camnumber ==6):
             if(i <= 1):
                 lsl = 890.0
                 usl = 930.0
-                window = '1'
             elif(i==2):
                 lsl = 120000.0
                 usl = 130000.0
-                window = '3'
-                
-        cp.append((usl-lsl)/(6*stddev[i]))
-        cpl.append((mn[i]-lsl)/(3*stddev[i]))
-        cpu.append((usl-mn[i])/(3*stddev[i]))  
+        
+        lsllist.append(lsl)
+        usllist.append(usl)
+        cp.append((usl-lsl)/(6*stdlist[i]))
+        cpl.append((mnlist[i]-lsl)/(3*stdlist[i]))
+        cpu.append((usl-mnlist[i])/(3*stdlist[i]))  
         cpk.append(min(cpl[i],cpu[i]))
   
-    return cp,cpl,cpu,cpk
+    values = {'cp':cp,'cpk':cpk,'std':stdlist,'usl':usllist,'lsl':lsllist,'mean':mnlist,'cpl':cpl,'cpu':cpu}
+    return values
 
+def write_cp(cp,max_min,camnumber):
+    column_map = {3:1,4:2,5:3,6:4}
+    col = column_map[camnumber]
+    r=1
+    
+    for i in range(len(cp['cp'])):
+        sheet2.write(r,col,max_min[0][i])
+        sheet2.write(1+r,col,max_min[1][i])
+        sheet2.write(2+r,col,cp['std'][i])
+        sheet2.write(3+r,col,cp['usl'][i])
+        sheet2.write(4+r,col,cp['lsl'][i])
+        sheet2.write(5+r,col,cp['cp'][i])
+        sheet2.write(6+r,col,cp['cpk'][i])      
+        r+=8
 
 print('\nAnalyzing CAM3 CPk...')
-CAM3 = filter_data('CAM3')
-#split list into seperate columns (returns df)
-CAM3df = pd.DataFrame(CAM3.to_list())
+CAM3df = filter_data('CAM3')
+print(max_min(CAM3df))
 print(Cp(CAM3df,3))
+write_cp(Cp(CAM3df,3),max_min(CAM3df),3)
 
-    
+
 print('\nAnalyzing CAM4 CPk...')       
-CAM4 = filter_data('CAM4')
-CAM4df = pd.DataFrame(CAM4.to_list())
+CAM4df = filter_data('CAM4')
+print(max_min(CAM4df))
 print(Cp(CAM4df,4))
+write_cp(Cp(CAM4df,4),max_min(CAM4df),4)
 
 
 print('\nAnalyzing CAM5 CPk...')
-CAM5 = filter_data('CAM5')
-CAM5df = pd.DataFrame(CAM5.to_list())
+CAM5df = filter_data('CAM5')
+print(max_min(CAM5df))
 print(Cp(CAM5df,5))
-  
-#     sheet2.write(h+r,3,max(list1))
-#     sheet2.write(h+1+r,3,min(list1))
-#     sheet2.write(h+2+r,3,std4)
-#     sheet2.write(h+3+r,3,usl4)
-#     sheet2.write(h+4+r,3,lsl4)
-#     sheet2.write(h+5+r,3,Cp4)
-#     sheet2.write(h+6+r,3,Cpk4)
+write_cp(Cp(CAM5df,5),max_min(CAM5df),5)
+
     
 print('\nAnalyzing CAM6 CPk...')
-CAM6 = filter_data('CAM6')
-#split list into seperate columns (returns df)
-CAM6df = pd.DataFrame(CAM6.to_list())
+CAM6df = filter_data('CAM6')
+print(max_min(CAM6df))
 print(Cp(CAM6df,6))
+write_cp(Cp(CAM6df,6),max_min(CAM6df),6)
 
 
 #---------------------Barcdode Grade----------------------------------------------------
@@ -411,7 +407,4 @@ sheet3.write(9,1, F)
   
 workbook.close()
 
-t1 = time.time()
-
-print(t1-t0)
 k=input('\nPress Enter to Exit')
