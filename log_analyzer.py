@@ -14,7 +14,7 @@ pfile = input('Enter path of P log: ')
 print('\nAnalyzing log files, please wait...')
 
 #Extract Columns
-slog = pd.read_csv(sfile,usecols=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19])
+slog = pd.read_csv(sfile,usecols=[0,2,4,5,6,8,9,10,,12,13,15,16,18,19])
 blog = pd.read_csv(bfile,index_col=False,usecols=[0,1,2,3,4,5,6,7,8])
 clog = pd.read_csv(cfile,index_col=False,usecols=[0,1,2,3,4,5])
 # crlog = pd.read_csv(crfile,index_col=False,usecols=[0,1,2,3,4,5])
@@ -100,26 +100,26 @@ print('Bundle Rework Qty: ' + str(bundlerework) + '\n')
 
 
 #--------------DOWNTIME----------------
-# downtimesheet= workbook.add_worksheet('Downtime')
-# downtimesheet.write(0,0,'From')
-# downtimesheet.write(0,1,'To')
-# downtimesheet.write(0,2,'Downtime')
+downtimesheet= workbook.add_worksheet('Downtime')
+downtimesheet.write(0,0,'From')
+downtimesheet.write(0,1,'To')
+downtimesheet.write(0,2,'Downtime')
 
-# downtimerow = 1
-# for i in range(slog.TIME.shape[0]):
-#     threshold = datetime.strptime('10:23:00 PM', '%I:%M:%S %p')-datetime.strptime('10:22:30 PM', '%I:%M:%S %p') 
-#     if i >0:
-#         time1 = datetime.strptime(slog.TIME[i-1], '%I:%M:%S %p')
-#         time2 = datetime.strptime(slog.TIME[i], '%I:%M:%S %p')
-#         diff = time2-time1
+downtimerow = 1
+for i in range(slog.TIME.shape[0]):
+    threshold = datetime.strptime('10:23:00 PM', '%I:%M:%S %p')-datetime.strptime('10:22:30 PM', '%I:%M:%S %p') 
+    if i >0:
+        time1 = datetime.strptime(slog.TIME[i-1], '%I:%M:%S %p')
+        time2 = datetime.strptime(slog.TIME[i], '%I:%M:%S %p')
+        diff = time2-time1
 
-#         if diff > threshold:
-#             # print(diff)
-#             # print('From '+ str(time1) +' To: ' + str(time2))
-#             downtimesheet.write(downtimerow,0,str(time1))
-#             downtimesheet.write(downtimerow,1,str(time2))
-#             downtimesheet.write(downtimerow,2,str(diff))
-#             downtimerow += 1            
+        if diff > threshold:
+             print(diff)
+             print('From '+ str(time1) +' To: ' + str(time2))
+             downtimesheet.write(downtimerow,0,str(time1))
+             downtimesheet.write(downtimerow,1,str(time2))
+             downtimesheet.write(downtimerow,2,str(diff))
+             downtimerow += 1            
 
 
 #-----------------SLEEVE TAGS------------------------------
