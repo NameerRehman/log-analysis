@@ -25,6 +25,7 @@ parser.read(ini_path)
 # Create a dictionary of the variables stored under the "files" section of the .ini
 files = {param[0]: param[1] for param in parser.items('files')}
 fields = {param[0]: param[1] for param in parser.items('fields')}
+downtime = {param[0]: param[1] for param in parser.items('downtime')}
 
 print(files)
 print(fields)
@@ -63,6 +64,9 @@ print('Total Produced: ' + str(produced))
 tagged = log[log[fields['tagged']] == 'TAGGED'].shape[0]
 print('Total TAG: ' + str(tagged))
 
+reproduced = log[log[fields['reproduced']] == 'RE-PRODUCED'].shape[0]
+defectrate = (tagged/runqty)*100
+
 firstpass = log[log[fields['reproduced']] != 'RE-PRODUCED'] #total run qty in first pass
 firstgood = firstpass[firstpass[fields['tagged']] != 'TAGGED'].shape[0]
 print('First Pass Yield: ' + str(firstgood))
@@ -96,17 +100,45 @@ print(tags)
 ##--------------CREATE EXCEL WORKBOOK----------------
 output = files['output_path'] + "/" + files['output_filename'] + ".xlsx"
 workbook  = xlsxwriter.Workbook(output)
+yieldsheet = workbook.add_worksheet('Yield')
+downtimesheet= workbook.add_worksheet('Downtime')
 
+
+##--------------DOWNTIME OUTPUT TO EXCEL---------------------
+downtimesheet.write(0,0,'From')
+downtimesheet.write(0,1,'To')
+downtimesheet.write(0,2,'Downtime')
+downtimerow = 1
+
+total_downtime = timedelta(seconds=0)
+
+for i in range(log[fields['time']].shape[0]):
+    threshold = timedelta(seconds=int(downtime['threshold']))
+    if i >0:
+        time1 = datetime.strptime(log[fields['time']][i-1], '%I:%M:%S %p')
+        time2 = datetime.strptime(log[fields['time']][i], '%I:%M:%S %p')
+        diff = time2-time1
+
+        if diff > threshold:            
+            downtimesheet.write(downtimerow,0,str(time1))
+            downtimesheet.write(downtimerow,1,str(time2))
+            downtimesheet.write(downtimerow,2,str(diff))
+            total_downtime += diff
+            downtimerow += 1            
+
+downtimesheet.write(downtimerow,1,'TOTAL: ')
+downtimesheet.write(downtimerow,2,str(total_downtime))
+
+perc_downtime = (total_downtime/elapsed)*100
+perc_uptime = 100-perc_downtime
 
 ##-----------------YIELD OUTPUT TO EXCEL--------------------
-desc = ['Start Date','Complete Time','Total Production Hrs','Total Run Qty','Total Produced',
-        'Total TAG','First Pass Yield','First Pass Defects','Second Pass Yield',
-        'Second Pass Defects']
+desc = ['Start Date','Complete Time','Total Production Hrs','Total Downtime','% Downtime','% Uptime',
+        'Total Run Qty','Total Produced','Total Tagged','Total Reproduced','Defect Rate (%)',
+        'First Pass Yield','First Pass Defects','Second Pass Yield','Second Pass Defects']
 
-data = [starttime,completedate,elapsed,runqty,produced,tagged,
-        firstgood,firstbad,secondgood,secondbad]
-
-yieldsheet = workbook.add_worksheet('Yield')
+data = [starttime,completedate,elapsed,total_downtime,perc_downtime,perc_uptime,runqty,produced,
+        tagged,reproduced,defectrate,firstgood,firstbad,secondgood,secondbad]
 
 for i in range(len(desc)):
     yieldsheet.write(i,0,desc[i])
@@ -122,32 +154,7 @@ for i in range(tags.shape[0]):
     yieldsheet.write(len(desc)+3+i,1,tags.Count[i])
     yieldsheet.write(len(desc)+3+i,2,tags.percent[i])
 
-##--------------DOWNTIME OUTPUT TO EXCEL---------------------
 
-downtimesheet= workbook.add_worksheet('Downtime')
-downtimesheet.write(0,0,'From')
-downtimesheet.write(0,1,'To')
-downtimesheet.write(0,2,'Downtime')
-downtimerow = 1
-
-total_downtime = timedelta(seconds=0)
-
-for i in range(log[fields['time']].shape[0]):
-    threshold = timedelta(seconds=6)
-    if i >0:
-        time1 = datetime.strptime(log[fields['time']][i-1], '%I:%M:%S %p')
-        time2 = datetime.strptime(log[fields['time']][i], '%I:%M:%S %p')
-        diff = time2-time1
-
-        if diff > threshold:            
-            downtimesheet.write(downtimerow,0,str(time1))
-            downtimesheet.write(downtimerow,1,str(time2))
-            downtimesheet.write(downtimerow,2,str(diff))
-            total_downtime += diff
-            downtimerow += 1            
-
-downtimesheet.write(downtimerow,1,'TOTAL: ')
-downtimesheet.write(downtimerow,2,str(total_downtime))
 
 workbook.close()
 os.startfile(output)
